@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Coder's Conundrum ⚡</title>
+    <style>
+        /* --- Google Font --- */
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap');
+
+        /* --- CSS Variables (Theme) --- */
+        :root {
+            --bg-color: #1a1a1a;
+            --font-color: #e0e0e0;
+            --accent-color: #00ff99;
+            --accent-color-dark: #00b36b;
+            --correct-color: #28a745;
+            --wrong-color: #dc3545;
+            --border-color: #333;
+            --font-family: 'Fira Code', monospace;
+        }
+
+        /* --- Global Styles & Resets --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--font-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* --- Main Quiz Container --- */
+        .quiz-container {
+            background-color: #252525;
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- Screen Visibility --- */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* --- Start Screen --- */
+        #start-screen h1 {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        #start-screen p {
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        /* --- Progress Bar --- */
+        .progress-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: var(--border-color);
+            border-radius: 5px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--accent-color);
+            transition: width 0.3s ease-in-out;
+        }
+
+        /* --- Question & Options --- */
+        #question-text {
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        .options-list {
+            list-style: none;
+            display: grid;
+            gap: 15px;
+        }
+        .option {
+            background-color: #333;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+        .option:hover:not(.disabled) {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            transform: translateY(-2px);
+            border-color: var(--accent-color);
+        }
+        .option.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .option.correct {
+            background-color: var(--correct-color);
+            border-color: var(--correct-color);
+            color: white;
+            animation: bounceIn 0.5s ease;
+        }
+        .option.wrong {
+            background-color: var(--wrong-color);
+            border-color: var(--wrong-color);
+            color: white;
+            animation: shake 0.5s ease;
+        }
+
+        /* --- Feedback Section --- */
+        #feedback-section {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            line-height: 1.6;
+            display: none; /* Initially hidden */
+        }
+        #feedback-section.correct-feedback {
+            background-color: rgba(40, 167, 69, 0.1);
+            border-left: 5px solid var(--correct-color);
+        }
+        #feedback-section.wrong-feedback {
+            background-color: rgba(220, 53, 69, 0.1);
+            border-left: 5px solid var(--wrong-color);
+        }
+        
+        /* --- Buttons --- */
+        .btn {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            border: none;
+            border-radius: 8px;
+            padding: 15px 30px;
+            font-family: var(--font-family);
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .btn:hover {
+            background-color: var(--accent-color-dark);
+            box-shadow: 0 5px 15px rgba(0, 255, 153, 0.2);
+        }
+        #next-btn { display: none; }
+
+        /* --- End Screen --- */
+        #end-screen h2 {
+            text-align: center;
+            font-size: 2.2rem;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+        }
+        #final-score {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+        }
+        .share-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        .share-btn {
+            padding: 10px 20px;
+            text-decoration: none;
+            color: var(--bg-color);
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .twitter { background-color: #1DA1F2; }
+        .linkedin { background-color: #0A66C2; }
+
+        /* --- Interstitial Screen --- */
+        #interstitial-screen .content {
+            text-align: center;
+            padding: 30px;
+            border: 1px dashed var(--border-color);
+            border-radius: 10px;
+            background-color: #202020;
+        }
+        #interstitial-screen pre {
+            background: #111;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: left;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin-bottom: 20px;
+        }
+        #interstitial-screen p {
+            font-style: italic;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        /* --- Submission Form --- */
+        #submission-section {
+            margin-top: 40px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+            text-align: center;
+        }
+        #submission-section p {
+            margin-bottom: 10px;
+        }
+        #question-submission-input {
+            width: 100%;
+            background: #333;
+            border: 1px solid var(--border-color);
+            color: var(--font-color);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: var(--font-family);
+            margin-bottom: 10px;
+        }
+
+        /* --- Easter Egg Modal --- */
+        #easter-egg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        #easter-egg.visible {
+            display: flex;
+            opacity: 1;
+        }
+        #easter-egg .content {
+            color: var(--accent-color);
+            font-size: 2rem;
+            text-align: center;
+            text-shadow: 0 0 10px var(--accent-color);
+            animation: glitch 1.5s linear infinite;
+        }
+
+
+        /* --- Animations --- */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        @keyframes bounceIn {
+            0% { opacity: 0; transform: scale(0.3); }
+            50% { opacity: 1; transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+        @keyframes glitch {
+            2%,64%{ transform: translate(2px,0) skew(0deg); }
+            4%,60%{ transform: translate(-2px,0) skew(0deg); }
+            62%{ transform: translate(0,0) skew(5deg); }
+        }
+
+        /* --- Responsive Design --- */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .quiz-container { padding: 20px; }
+            #start-screen h1 { font-size: 2rem; }
+            #question-text { font-size: 1.2rem; }
+            .btn { padding: 12px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div id="start-screen" class="screen active">
+            <h1>The Coder's Conundrum ⚡</h1>
+            <p>Are you a true techie? Test your knowledge with these fun, nerdy questions. No pressure, just 1s and 0s.</p>
+            <button id="start-btn" class="btn">Start Quiz</button>
+        </div>
+
+        <div id="quiz-screen" class="screen">
+            <div class="progress-bar-container">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <h2 id="question-text"></h2>
+            <ul id="options-list" class="options-list">
+                </ul>
+            <div id="feedback-section">
+                <p id="feedback-text"></p>
+            </div>
+            <button id="next-btn" class="btn">Next Question</button>
+        </div>
+        
+        <div id="interstitial-screen" class="screen">
+            <div class="content">
+                </div>
+            <button id="continue-btn" class="btn">Continue</button>
+        </div>
+
+        <div id="end-screen" class="screen">
+            <h2>Quiz Complete!</h2>
+            <p id="final-score"></p>
+            <p id="score-message"></p>
+            <button id="replay-btn" class="btn">Replay Quiz</button>
+            <div class="share-buttons">
+                <a href="#" id="share-twitter" class="share-btn twitter" target="_blank">Share on X</a>
+                <a href="#" id="share-linkedin" class="share-btn linkedin" target="_blank">Share on LinkedIn</a>
+            </div>
+            <div id="submission-section">
+                <p>Got a fun question? Submit it!</p>
+                <input type="text" id="question-submission-input" placeholder="e.g., Why do Java developers wear glasses?">
+                <button id="submit-question-btn" class="btn" style="width: auto; padding: 10px 20px; font-size: 0.9rem; margin: 10px auto 0;">Submit</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="easter-egg">
+        <div class="content">
+            <p>// ROOT ACCESS GRANTED //</p>
+            <p>Welcome, master hacker.</p>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // --- DATA --- //
+        const quizData = [
+            {
+                question: "What does the 'git' in 'git push origin master' technically mean?",
+                options: ["A tracking tool", "A British insult for a foolish person", "Global Information Tracker", "It's short for 'get it'"],
+                correct: "A British insult for a foolish person",
+                correctFact: "Linus Torvalds jokingly said he names projects after himself: 'First Linux, now Git.' It's British slang for an unpleasant person.",
+                wrongFacts: {
+                    "A tracking tool": "While it is a tracking tool, the name itself has a more... colorful origin story.",
+                    "Global Information Tracker": "This is a common 'backronym' (an acronym made after the fact), but it's not the real origin.",
+                    "It's short for 'get it'": "A good guess for a command-line tool, but the truth is funnier!"
+                }
+            },
+            {
+                question: "Which of these is NOT a real programming language?",
+                options: ["Whitespace", "LOLCODE", "HTML", "Chicken"],
+                correct: "HTML",
+                correctFact: "Correct! HTML is a 'markup' language, not a 'programming' language. It structures content but doesn't have logic like loops or variables.",
+                wrongFacts: {
+                    "Whitespace": "This is a real, esoteric language where only spaces, tabs, and linefeeds are considered syntax. Spooky!",
+                    "LOLCODE": "Inspired by lolcat memes, this language uses syntax like 'HAI' and 'KTHXBYE'. It's totally real.",
+                    "Chicken": "Yes, really. This language consists of only one word: 'chicken'. The number and spacing of 'chicken's determine the operation."
+                }
+            },
+            {
+                question: "What status code is returned when a server is 'a teapot'?",
+                options: ["404", "200", "418", "503"],
+                correct: "418",
+                correctFact: "HTTP status code 418 'I'm a teapot' was an April Fools' joke from 1998 that became a beloved part of internet culture.",
+                wrongFacts: {
+                    "404": "This is the classic 'Not Found' error. You've probably seen it a million times.",
+                    "200": "This means 'OK'. It's the standard response for successful HTTP requests. The dream status code!",
+                    "503": "This is 'Service Unavailable', meaning the server is down for maintenance or is overloaded."
+                }
+            },
+            {
+                question: "In CSS, what does 'Cascading' in Cascading Style Sheets refer to?",
+                options: ["The way styles flow down from parent to child elements", "A waterfall-like code editor theme", "An old browser from the 90s", "The process of a browser rendering a page"],
+                correct: "The way styles flow down from parent to child elements",
+                correctFact: "The 'cascade' is the algorithm that determines how to resolve conflicts when multiple CSS rules apply to the same element. Specificity is key!",
+                wrongFacts: {
+                    "A waterfall-like code editor theme": "While waterfall development models exist, the 'cascading' in CSS is all about style inheritance and specificity.",
+                    "An old browser from the 90s": "You might be thinking of Netscape Navigator, but 'Cascading' refers to the style rules themselves.",
+                    "The process of a browser rendering a page": "Rendering is the end result, but 'cascading' is the specific process of applying the styles before rendering."
+                }
+            },
+            {
+                question: "What was the first computer 'bug'?",
+                options: ["A software glitch in a punch card", "A moth stuck in a relay", "A typo by a programmer", "A coffee spill on a motherboard"],
+                correct: "A moth stuck in a relay",
+                correctFact: "In 1947, Grace Hopper and her team found a moth trapped in a relay of the Harvard Mark II computer, causing errors. They taped it to the logbook, literally 'debugging' the system.",
+                wrongFacts: {
+                    "A software glitch in a punch card": "Software bugs are common now, but the very first recorded one was physical hardware interference!",
+                    "A typo by a programmer": "The term 'bug' for a flaw existed before computers, but the first *logged computer bug* was the famous moth.",
+                    "A coffee spill on a motherboard": "A classic developer nightmare, but not the origin of the term 'bug' in computing."
+                }
+            },
+            {
+                question: "What does the 'SOLID' principle 'D' stand for?",
+                options: ["Don't Repeat Yourself", "Dependency Inversion Principle", "Data-Oriented Design", "Dynamic Language Protocol"],
+                correct: "Dependency Inversion Principle",
+                correctFact: "The Dependency Inversion Principle states that high-level modules should not depend on low-level modules, but both should depend on abstractions.",
+                wrongFacts: {
+                    "Don't Repeat Yourself": "This is the 'DRY' principle, another fundamental concept in software engineering, but not part of SOLID.",
+                    "Data-Oriented Design": "This is a programming paradigm often used in game development for performance, distinct from SOLID.",
+                    "Dynamic Language Protocol": "This sounds plausible but isn't a part of the SOLID acronym."
+                }
+            },
+            {
+                question: "The programming language 'Python' was named after...?",
+                options: ["The snake", "A developer's pet", "Monty Python's Flying Circus", "The Oracle of Delphi, also known as Pythia"],
+                correct: "Monty Python's Flying Circus",
+                correctFact: "Guido van Rossum, Python's creator, was reading the published scripts from the British comedy group 'Monty Python's Flying Circus' and wanted a short, unique, and slightly mysterious name.",
+                wrongFacts: {
+                    "The snake": "This is the most common misconception. The language's logo features snakes, but that came after the name.",
+                    "A developer's pet": "A cute story, but the inspiration was from British comedy, not a scaly friend.",
+                    "The Oracle of Delphi, also known as Pythia": "A very clever guess connecting 'Python' to Greek mythology, but the reality is much more silly."
+                }
+            },
+            {
+                question: "In JavaScript, what is `NaN`'s data type?",
+                options: ["null", "undefined", "string", "number"],
+                correct: "number",
+                correctFact: "It's weird, but true! `typeof NaN` returns `'number'`. NaN stands for 'Not a Number', but it's technically a numeric data type.",
+                wrongFacts: {
+                    "null": "`null` is its own type in JS (though `typeof null` confusingly returns 'object'!).",
+                    "undefined": "`undefined` is also its own distinct type, representing a variable that has not been assigned a value.",
+                    "string": "`NaN` can be converted to the string 'NaN', but its underlying type is `number`."
+                }
+            },
+            {
+                question: "What does SQL stand for?",
+                options: ["Strong Question Language", "Structured Query Language", "Simple Query Logic", "Sequential Query Language"],
+                correct: "Structured Query Language",
+                correctFact: "SQL is the standard language for managing and manipulating data in relational databases.",
+                wrongFacts: {
+                    "Strong Question Language": "While it's strong for asking questions of a database, this isn't the correct expansion.",
+                    "Simple Query Logic": "Though some queries are simple, SQL can get incredibly complex! It's more than just logic.",
+                    "Sequential Query Language": "This was the original name (SEQUEL), but it was later changed to SQL due to a trademark issue."
+                }
+            },
+            {
+                question: "Which data structure operates on a 'Last-In, First-Out' (LIFO) basis?",
+                options: ["Queue", "Stack", "Array", "Linked List"],
+                correct: "Stack",
+                correctFact: "A stack is like a pile of plates. You add a new plate to the top ('push') and remove a plate from the top ('pop'). The last one you put on is the first one you take off.",
+                wrongFacts: {
+                    "Queue": "A queue is 'First-In, First-Out' (FIFO), like a line at a checkout counter. The first person in line is the first to be served.",
+                    "Array": "An array is a collection of elements, but it doesn't have an inherent LIFO or FIFO operating principle.",
+                    "Linked List": "A linked list can be used to implement both stacks and queues, but it isn't inherently LIFO itself."
+                }
+            }
+        ];
+        
+        const interstitialData = [
+            { type: 'meme', content: `Why do programmers prefer dark mode?\n\nBecause light attracts bugs.` },
+            { type: 'quote', content: `"Any fool can write code that a computer can understand. Good programmers write code that humans can understand." - Martin Fowler` },
+            { type: 'fact', content: `The first gigabyte hard drive, the IBM 3380, was released in 1980. It weighed over 550 pounds (250 kg) and cost $40,000.` },
+            { type: 'meme', content: `A programmer puts two glasses on his bedside table before going to sleep.\n\nA full one, in case he gets thirsty, and an empty one, in case he doesn't.` },
+            { type: 'quote', content: `"There are only two hard things in Computer Science: cache invalidation and naming things." - Phil Karlton` }
+        ];
+
+        // --- DOM Elements --- //
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const endScreen = document.getElementById('end-screen');
+        const interstitialScreen = document.getElementById('interstitial-screen');
+        const screens = [startScreen, quizScreen, endScreen, interstitialScreen];
+
+        const startBtn = document.getElementById('start-btn');
+        const replayBtn = document.getElementById('replay-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const continueBtn = document.getElementById('continue-btn');
+
+        const questionText = document.getElementById('question-text');
+        const optionsList = document.getElementById('options-list');
+        const feedbackSection = document.getElementById('feedback-section');
+        const feedbackText = document.getElementById('feedback-text');
+
+        const progressBar = document.getElementById('progress-bar');
+        const finalScore = document.getElementById('final-score');
+        const scoreMessage = document.getElementById('score-message');
+
+        // --- State Variables --- //
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let shuffledQuestions = [];
+
+        // --- Functions --- //
+
+        // Function to switch between screens
+        const showScreen = (screenToShow) => {
+            screens.forEach(screen => screen.classList.remove('active'));
+            screenToShow.classList.add('active');
+        };
+
+        // Shuffle array using Fisher-Yates algorithm
+        const shuffleArray = (array) => {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        };
+
+        const startGame = () => {
+            currentQuestionIndex = 0;
+            score = 0;
+            shuffledQuestions = shuffleArray([...quizData]);
+            showScreen(quizScreen);
+            displayQuestion();
+            updateProgressBar();
+        };
+
+        const displayQuestion = () => {
+            // Reset state from previous question
+            optionsList.innerHTML = '';
+            feedbackSection.style.display = 'none';
+            feedbackSection.className = '';
+            nextBtn.style.display = 'none';
+
+            const question = shuffledQuestions[currentQuestionIndex];
+            questionText.innerText = question.question;
+
+            shuffleArray([...question.options]).forEach(optionText => {
+                const li = document.createElement('li');
+                li.innerText = optionText;
+                li.classList.add('option');
+                li.addEventListener('click', () => selectAnswer(optionText, li));
+                optionsList.appendChild(li);
+            });
+            updateProgressBar();
+        };
+        
+        const selectAnswer = (selectedOption, selectedElement) => {
+            const question = shuffledQuestions[currentQuestionIndex];
+            const isCorrect = selectedOption === question.correct;
+            
+            // Disable all options
+            Array.from(optionsList.children).forEach(option => {
+                option.classList.add('disabled');
+                // Reveal the correct answer
+                if (option.innerText === question.correct) {
+                    option.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                score++;
+                selectedElement.classList.add('correct');
+                feedbackText.innerText = `✅ Correct! ${question.correctFact}`;
+                feedbackSection.classList.add('correct-feedback');
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            } else {
+                selectedElement.classList.add('wrong');
+                const wrongFact = question.wrongFacts[selectedOption] || "That's not the right one, try to remember the correct answer for next time!";
+                feedbackText.innerText = `❌ Incorrect. ${wrongFact}`;
+                feedbackSection.classList.add('wrong-feedback');
+            }
+
+            feedbackSection.style.display = 'block';
+            nextBtn.style.display = 'block';
+        };
+
+        const handleNext = () => {
+            currentQuestionIndex++;
+            if ((currentQuestionIndex) % 4 === 0 && currentQuestionIndex < shuffledQuestions.length) {
+                showInterstitial();
+            } else {
+                loadNextQuestionOrEnd();
+            }
+        };
+
+        const loadNextQuestionOrEnd = () => {
+             if (currentQuestionIndex < shuffledQuestions.length) {
+                showScreen(quizScreen);
+                displayQuestion();
+            } else {
+                showEndScreen();
+            }
+        };
+
+        const showInterstitial = () => {
+            const item = interstitialData[Math.floor(Math.random() * interstitialData.length)];
+            const contentContainer = interstitialScreen.querySelector('.content');
+            
+            if (item.type === 'meme' || item.type === 'fact') {
+                contentContainer.innerHTML = `<pre>${item.content}</pre>`;
+            } else if (item.type === 'quote') {
+                contentContainer.innerHTML = `<p>"${item.content}"</p>`;
+            }
+            
+            showScreen(interstitialScreen);
+        };
+        
+        const showEndScreen = () => {
+            showScreen(endScreen);
+            const percentage = Math.round((score / shuffledQuestions.length) * 100);
+            finalScore.innerText = `You scored ${score} out of ${shuffledQuestions.length} (${percentage}%)`;
+
+            let message = "";
+            if (percentage === 100) message = "Perfect score! You're a true code wizard. 🧙‍♂️";
+            else if (percentage >= 80) message = "Excellent! You know your stuff. Keep hacking! 💻";
+            else if (percentage >= 50) message = "Not bad! A few more commits and you'll be a pro. 😉";
+            else message = "Hey, everyone starts somewhere. Time to hit the docs! 📚";
+            scoreMessage.innerText = message;
+
+            setupShareLinks(score, shuffledQuestions.length);
+        };
+
+        const updateProgressBar = () => {
+            const progress = ((currentQuestionIndex) / shuffledQuestions.length) * 100;
+            progressBar.style.width = `${progress}%`;
+        };
+        
+        const setupShareLinks = (userScore, totalQuestions) => {
+            const text = `I scored ${userScore}/${totalQuestions} on The Coder's Conundrum quiz! Think you can beat me? 🤓`;
+            const encodedText = encodeURIComponent(text);
+            const quizUrl = encodeURIComponent(window.location.href);
+
+            const twitterLink = `https://twitter.com/intent/tweet?text=${encodedText}&url=${quizUrl}`;
+            document.getElementById('share-twitter').href = twitterLink;
+
+            const linkedinLink = `https://www.linkedin.com/shareArticle?mini=true&url=${quizUrl}&title=The%20Coder's%20Conundrum&summary=${encodedText}`;
+            document.getElementById('share-linkedin').href = linkedinLink;
+        };
+        
+        // --- Easter Egg --- //
+        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        let konamiIndex = 0;
+        const easterEggModal = document.getElementById('easter-egg');
+
+        const keyHandler = (e) => {
+            if (e.key === konamiCode[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === konamiCode.length) {
+                    easterEggModal.classList.add('visible');
+                    setTimeout(() => {
+                        easterEggModal.classList.remove('visible');
+                    }, 4000);
+                    konamiIndex = 0; // Reset
+                }
+            } else {
+                konamiIndex = 0;
+            }
+        };
+
+        // --- Event Listeners --- //
+        startBtn.addEventListener('click', startGame);
+        replayBtn.addEventListener('click', startGame);
+        nextBtn.addEventListener('click', handleNext);
+        continueBtn.addEventListener('click', loadNextQuestionOrEnd);
+        document.addEventListener('keydown', keyHandler);
+        
+        document.getElementById('submit-question-btn').addEventListener('click', () => {
+            const input = document.getElementById('question-submission-input');
+            if (input.value.trim() !== "") {
+                alert("Thanks for your submission! We'll review it. (This is a demo, so it's not actually sent anywhere!)");
+                input.value = "";
+            }
+        });
+
+    });
+    </script>
+</body>
+</html>
